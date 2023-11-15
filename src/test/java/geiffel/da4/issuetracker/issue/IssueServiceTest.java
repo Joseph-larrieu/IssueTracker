@@ -10,6 +10,8 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,11 +28,11 @@ public class IssueServiceTest {
     @BeforeEach
     void setUp() {
         issues = new ArrayList<>(){{
-            add(new Issue(1L, "blah", "some content1", author));
-            add(new Issue(2L, "bleuh", "some content2", author));
-            add(new Issue(3L, "blih", "some content3", author));
-            add(new Issue(4L, "bloh", "some content4", author));
-            add(new Issue(5L, "bluh", "some content5", author));
+            add(new Issue(1L, "blah", "some content1", author, Timestamp.from(Instant.now()), null));
+            add(new Issue(2L, "bleuh", "some content2", author, Timestamp.from(Instant.now()), null));
+            add(new Issue(3L, "blih", "some content3", author, Timestamp.from(Instant.now()), null));
+            add(new Issue(4L, "bloh", "some content4", author, Timestamp.from(Instant.now()), null));
+            add(new Issue(5L, "bluh", "some content5", author, Timestamp.from(Instant.now()), null));
         }};
         issueService = new IssueLocalService(issues);
     }
@@ -52,7 +54,7 @@ public class IssueServiceTest {
 
     @Test
     void whenCreatingIssue_shouldHaveIncreasedSize_andShouldGetIt() {
-        Issue new_issue = new Issue(7L, "blyhgrec", "some stuff", author);
+        Issue new_issue = new Issue(7L, "blyhgrec", "some stuff", author, Timestamp.from(Instant.now()), null);
         int initial_size = issues.size();
 
         assertAll(
@@ -79,8 +81,10 @@ public class IssueServiceTest {
         Issue issueToModify2 = issues.get(3);
         String newTitle = "Modified title";
         String newContent = "Modified content";
-        Issue updateTitleIssue = new Issue(issueToModify1.getCode(), newTitle, issueToModify1.getContent(), issueToModify1.getEmitter());
-        Issue updatedContentIssue = new Issue(issueToModify2.getCode(), issueToModify2.getTitle(), newContent, issueToModify2.getEmitter());
+        Issue updateTitleIssue = new Issue(issueToModify1.getCode(), newTitle, issueToModify1.getContent(),
+                issueToModify1.getEmitter(), issueToModify1.getDateCreated(), issueToModify1.getDateClosed());
+        Issue updatedContentIssue = new Issue(issueToModify2.getCode(), issueToModify2.getTitle(), newContent,
+                issueToModify2.getEmitter(), issueToModify2.getDateCreated(), issueToModify2.getDateClosed());
 
         issueService.update(issueToModify1.getCode(), updateTitleIssue);
         issueService.update(issueToModify2.getCode(), updatedContentIssue);
@@ -101,6 +105,5 @@ public class IssueServiceTest {
                 () -> assertThrows(ResourceNotFoundException.class, ()->issueService.getByCode(code))
         );
     }
-
 
 }

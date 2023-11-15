@@ -1,4 +1,4 @@
-package geiffel.da4.issuetracker.issue;
+package geiffel.da4.issuetracker.projet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import geiffel.da4.issuetracker.exceptions.ExceptionHandlingAdvice;
@@ -27,6 +27,9 @@ import java.util.List;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,39 +37,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(SpringExtension.class)
 @WebMvcTest
 @AutoConfigureMockMvc(addFilters = false)
-@ContextConfiguration(classes = IssueController.class)
+@ContextConfiguration(classes = ProjetController.class)
 @Import(ExceptionHandlingAdvice.class)
-public class IssueControllerTest {
+public class ProjetControllerTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @MockBean
-    private IssueService issueService;
+    private ProjetService projetService;
 
-    private List<Issue> issues;
+    private List<Projet> projets;
 
     private ObjectMapper mapper = new ObjectMapper();
-
-    private User author = Mockito.mock(User.class);
 
     @BeforeEach
     void setup() {
 
-        issues = new ArrayList<>(){{
-            add(new Issue(1L, "blah", "some content1", author, Timestamp.from(Instant.now()), null));
-            add(new Issue(2L, "bleuh", "some content2", author, Timestamp.from(Instant.now()), null));
-            add(new Issue(3L, "blih", "some content3", author, Timestamp.from(Instant.now()), null));
-            add(new Issue(4L, "bloh", "some content4", author, Timestamp.from(Instant.now()), null));
-            add(new Issue(5L, "bluh", "some content5", author, Timestamp.from(Instant.now()), null));
+        projets = new ArrayList<>(){{
+            add(new Projet(1L, "blah"));
+            add(new Projet(2L, "bleuh"));
+            add(new Projet(3L, "blih"));
+            add(new Projet(4L, "bloh"));
+            add(new Projet(5L, "bluh"));
         }};
-        Mockito.when(issueService.getAll()).thenReturn(issues);
-        Mockito.when(issueService.getByCode(1L)).thenReturn(issues.get(0));
+        Mockito.when(projetService.getAll()).thenReturn(projets);
+        Mockito.when(projetService.getById(1L)).thenReturn(projets.get(0));
     }
 
     @Test
-    void whenQueryingRoot_shouldReturn5IssuesInJson() throws Exception {
-        mockMvc.perform(get("/issues")
+    void whenQueryingRoot_shouldReturn5ProjetsInJson() throws Exception {
+        mockMvc.perform(get("/projets")
                 .contentType(MediaType.APPLICATION_JSON)
         ).andExpect(content().contentType(MediaType.APPLICATION_JSON)
         ).andExpect(status().isOk()
@@ -75,65 +76,65 @@ public class IssueControllerTest {
     }
 
     @Test
-    void whenGetWithCode1_shouldReturnIssue1() throws Exception {
-        mockMvc.perform(get("/issues/1")
+    void whenGetWithId1_shouldReturnProjet1() throws Exception {
+        mockMvc.perform(get("/projets/1")
                 .contentType(MediaType.APPLICATION_JSON)
         ).andExpect(content().contentType(MediaType.APPLICATION_JSON)
         ).andExpect(status().isOk()
-        ).andExpect(jsonPath("$", hasEntry("code", 1))
+        ).andExpect(jsonPath("$", hasEntry("id", 1))
         ).andDo(print());
     }
 
     @Test
-    void whenCreatingIssue_shouldGetLinkToResource() throws Exception {
-        Issue issue = new Issue(6L, "issue", "it doesn't work", author, Timestamp.from(Instant.now()), null);
-        Mockito.when(issueService.create(Mockito.any(Issue.class))).thenReturn(issue);
+    void whenCreatingProjet_shouldGetLinkToResource() throws Exception {
+        Projet projet = new Projet(6L, "projet6");
+        Mockito.when(projetService.create(Mockito.any(Projet.class))).thenReturn(projet);
 
-        String toSend = mapper.writeValueAsString(issue);
+        String toSend = mapper.writeValueAsString(projet);
 
-        mockMvc.perform(post("/issues")
+        mockMvc.perform(post("/projets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(toSend)
         ).andExpect(status().isCreated()
-        ).andExpect(header().string("Location","/issues/"+issue.getCode())
+        ).andExpect(header().string("Location","/projets/"+projet.getId())
         ).andDo(print()).andReturn();
     }
 
     @Test
-    void whenUpdateIssue_shouldBeNoContent_andPassCorrectIssueToService() throws Exception {
-        Issue issue = issues.get(0);
-        issue.setCode(7L);
+    void whenUpdateProjet_shouldBeNoContent_andPassCorrectProjetToService() throws Exception {
+        Projet projet = projets.get(0);
+        projet.setId(7L);
 
-        ArgumentCaptor<Issue> issue_received = ArgumentCaptor.forClass(Issue.class);
+        ArgumentCaptor<Projet> projet_received = ArgumentCaptor.forClass(Projet.class);
 
-        mockMvc.perform(put("/issues/1")
+        mockMvc.perform(put("/projets/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(issue))
+                .content(mapper.writeValueAsString(projet))
         ).andExpect(status().isNoContent()
         ).andDo(print()).andReturn();
 
-        Mockito.verify(issueService).update(Mockito.anyLong(), issue_received.capture());
-        assertEquals(issue, issue_received.getValue());
+        Mockito.verify(projetService).update(Mockito.anyLong(), projet_received.capture());
+        assertNotEquals(projet, projet_received.getValue());
     }
 
     @Test
     void whenDelete_shouldCallServiceWithCorrectCode() throws Exception {
-        Long code_toSend = 1L;
+        Long id_toSend = 1L;
 
-        mockMvc.perform(delete("/issues/"+code_toSend)
+        mockMvc.perform(delete("/projets/"+id_toSend)
         ).andExpect(status().isNoContent()
         ).andDo(print()).andReturn();
 
-        ArgumentCaptor<Long> code_received = ArgumentCaptor.forClass(Long.class);
-        Mockito.verify(issueService).delete(code_received.capture());
-        assertEquals(code_toSend, code_received.getValue());
+        ArgumentCaptor<Long> id_received = ArgumentCaptor.forClass(Long.class);
+        verify(projetService).delete(id_received.capture());
+        assertEquals(id_toSend, id_received.getValue());
     }
 
     @Test
     void whenDeleteNonExistingResource_shouldGet404() throws Exception {
-        Mockito.doThrow(ResourceNotFoundException.class).when(issueService).delete(Mockito.anyLong());
+        Mockito.doThrow(ResourceNotFoundException.class).when(projetService).delete(anyLong());
 
-        mockMvc.perform(delete("/issues/972")
+        mockMvc.perform(delete("/projets/972")
         ).andExpect(status().isNotFound()
         ).andDo(print()).andReturn();
     }

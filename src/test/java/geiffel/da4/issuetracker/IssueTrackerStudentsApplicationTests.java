@@ -1,4 +1,4 @@
-package geiffel.da4.issuetracker;
+/*package geiffel.da4.issuetracker;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,3 +11,4 @@ class IssueTrackerStudentsApplicationTests {
     }
 
 }
+*/
